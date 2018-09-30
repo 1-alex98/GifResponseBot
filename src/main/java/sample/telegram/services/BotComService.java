@@ -59,7 +59,7 @@ public class BotComService {
 
                 }
             }else {
-                log.debug("NO updates found");
+                log.warn("No updates found");
             }
 
         }catch (Exception e){
