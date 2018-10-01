@@ -1,5 +1,6 @@
 package sample.telegram.services;
 
+import com.sun.deploy.Environment;
 import com.sun.xml.internal.bind.marshaller.Messages;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -28,7 +29,8 @@ public class BotComService {
     private final RestTemplate restTemplate;
     private ScheduledExecutorService scheduledExecutorService;
     private static final long FETCH_PERIOD= 2500;
-    private static final String BOT_KEY="-";
+    private static final String BOT_KEY=System.getenv("TELEGRAM_BOT_KEY");
+    private Long lastUpdateId;
 
     public BotComService() {
         restTemplate = new RestTemplate();
@@ -39,24 +41,32 @@ public class BotComService {
         log.info("STARTING");
         scheduledExecutorService= Executors.newSingleThreadScheduledExecutor();
 
-        scheduledExecutorService.execute(() -> getUpdatesAndHandOver(updateProcessor,true));
+        scheduledExecutorService.execute(() -> getUpdatesAndHandOver(updateProcessor));
     }
 
-    private void getUpdatesAndHandOver(UpdateProcessor updateProcessor,boolean startup) {
+    private void getUpdatesAndHandOver(UpdateProcessor updateProcessor) {
         try{
             log.trace("Running telegram update");
-            TelegramUpdateResponse updates = restTemplate.getForObject(getUrlForMethod("getUpdates"), TelegramUpdateResponse.class);
+            HashMap<String, String> parameters = new HashMap<>();
+            if(lastUpdateId!=null){
+                parameters.put("offset", String.valueOf((lastUpdateId+1L)));
+            }
+            parameters.put("timeout","100");
+
+            TelegramUpdateResponse updates = restTemplate.getForObject(getURIwitthParameters("getUpdates",parameters), TelegramUpdateResponse.class);
+            if((updates.getResult().isEmpty())){
+                return;
+            }
+            lastUpdateId= Long.valueOf(updates.getResult().get(updates.getResult().size()-1).getUpdateId());
+
             if(!updates.isOk()){
                 throw new IllegalStateException("Telegram did not hand out updates");
             }
             if(updates.getResult()!=null){
                 ArrayList<TelegramUpdate> telegramUpdates = new ArrayList<>(updates.getResult());
                 for (TelegramUpdate telegramUpdate:telegramUpdates){
-                    if(!DataStoreService.getInstance().registerUpdate(telegramUpdate) && !startup){
                         log.debug(MessageFormat.format("Received new message with id: {0}",telegramUpdate.getUpdateId()));
                         updateProcessor.processUpdate(telegramUpdate);
-                    }
-
                 }
             }else {
                 log.warn("No updates found");
@@ -66,16 +76,10 @@ public class BotComService {
             log.error("Exception during the fetching of updates",e);
         }
         if(scheduledExecutorService.isShutdown()) return;
-        scheduledExecutorService.schedule(()->getUpdatesAndHandOver(updateProcessor,false),FETCH_PERIOD,TimeUnit.MILLISECONDS);
+        scheduledExecutorService.schedule(()->getUpdatesAndHandOver(updateProcessor),FETCH_PERIOD,TimeUnit.MILLISECONDS);
     }
 
-    private String getUrlForMethod(String method) {
-        return MessageFormat.format("https://api.telegram.org/bot{0}/{1}",BOT_KEY,method);
-    }
-
-    private String getURIwitthParameters(String method, Map<String,String> parameters) throws URISyntaxException, UnsupportedEncodingException {
-        StringBuilder querryBuilder= new StringBuilder();
-        List<Map.Entry> entries = new ArrayList<>(parameters.entrySet());
+    private String getURIwitthParameters(String method, Map<String,String> parameters) {
         java.util.Map<String, List<String>> multiValues = parameters.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> Collections.singletonList(String.valueOf(entry.getValue()))));
         UriComponents uriComponents= UriComponentsBuilder.fromHttpUrl("https://api.telegram.org"+MessageFormat.format("/bot{0}/{1}",BOT_KEY,method))
@@ -87,6 +91,10 @@ public class BotComService {
     public void stop() {
         log.info("Shutting down");
         scheduledExecutorService.shutdown();
+        HashMap<String, String> parameters = new HashMap<>();
+        parameters.put("offset","100");
+        restTemplate.getForObject(getURIwitthParameters("getUpdates",parameters), TelegramUpdateResponse.class);
+        lastUpdateId=null;
     }
 
     public void respond(List<TelegramAnswer> telegramAnswers){

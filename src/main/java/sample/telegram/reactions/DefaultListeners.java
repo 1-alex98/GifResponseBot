@@ -15,7 +15,9 @@ public class DefaultListeners {
 
         //Gif on Kartoffel
         instance.registerListener(telegramUpdate -> {
-            String s = telegramUpdate.getMessage().getText().toLowerCase();
+            String text = telegramUpdate.getMessage().getText();
+            if(text==null)return Collections.emptyList();
+            String s = text.toLowerCase();
             if(s.contains("kartoffel") || s.contains("potato") ){
                 return Collections.singletonList(new SendAnimation(telegramUpdate.getMessage().getChat().getId(),TenorComService.getInstance().getRandomGifUrlForWord("potato","en_US")));
             }
@@ -24,6 +26,8 @@ public class DefaultListeners {
 
         //Custom trigger trigger
         instance.registerListener(telegramUpdate -> {
+            String text = telegramUpdate.getMessage().getText();
+            if(text==null)return Collections.emptyList();
             Integer chatId = telegramUpdate.getMessage().getChat().getId();
             String message = telegramUpdate.getMessage().getText();
             return CustomListenersService.getInstance().getTriggers(message,chatId);
@@ -31,6 +35,8 @@ public class DefaultListeners {
 
         //Custom triggers registering
         instance.registerListener(telegramUpdate -> {
+            String text = telegramUpdate.getMessage().getText();
+            if(text==null)return Collections.emptyList();
             String s = telegramUpdate.getMessage().getText().toLowerCase();
             Integer userId = telegramUpdate.getMessage().getFrom().getId();
             Integer chatId = telegramUpdate.getMessage().getChat().getId();
@@ -43,6 +49,8 @@ public class DefaultListeners {
                     Boolean success= CustomListenersService.getInstance().registerCustomTrigger(chatId,s);
                     DataStoreService.getInstance().removeLastCommandDate(userId);
                     return Collections.singletonList(new SendMessage(chatId,success?"Success...":"Error, wrong format!!!"));
+                }else if (s.contains("/clear")) {
+                    CustomListenersService.getInstance().clear(chatId);
                 }
             }
             return Collections.emptyList();

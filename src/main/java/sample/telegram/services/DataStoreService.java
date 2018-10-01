@@ -2,14 +2,19 @@ package sample.telegram.services;
 
 import com.google.gson.Gson;
 import lombok.Data;
+import lombok.extern.log4j.Log4j;
+import org.springframework.util.FileSystemUtils;
 import sample.telegram.dtos.TelegramUpdate;
 
+import java.io.*;
+import java.nio.file.Files;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Log4j
 public class DataStoreService {
     private static DataStoreService ourInstance = new DataStoreService();
     private List<Integer> registeredUpdates = new ArrayList<>();
@@ -36,9 +41,6 @@ public class DataStoreService {
         return false;
     }
 
-    public void save() {
-        //TODO:save
-    }
 
     public void registerUserForTrigger(Integer id) {
         usersCommandTrigger.put(id,OffsetDateTime.now());

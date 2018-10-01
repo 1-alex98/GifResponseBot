@@ -1,5 +1,6 @@
 package sample.telegram.services;
 
+import sample.telegram.reactions.CustomListenersService;
 import sample.telegram.reactions.DefaultListeners;
 import sample.telegram.dtos.TelegramUpdate;
 import sample.telegram.messages.TelegramAnswer;
@@ -46,7 +47,6 @@ public class BotService implements UpdateProcessor {
             return;
         }
         botComService.stop();
-        DataStoreService.getInstance().save();
         running= false;
     }
 
