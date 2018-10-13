@@ -1,9 +1,8 @@
-package sample.telegram.services;
+package de.vontrostorff.telegram.services;
 
-import sample.telegram.reactions.CustomListenersService;
-import sample.telegram.reactions.DefaultListeners;
-import sample.telegram.dtos.TelegramUpdate;
-import sample.telegram.messages.TelegramAnswer;
+import de.vontrostorff.telegram.dtos.TelegramUpdate;
+import de.vontrostorff.telegram.messages.TelegramAnswer;
+import de.vontrostorff.telegram.reactions.DefaultListeners;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,15 +13,13 @@ public class BotService implements UpdateProcessor {
     private Boolean running=false;
     private List<MessageListener> messageListeners;
 
-
     public static BotService getInstance() {
         return ourInstance;
     }
 
-    public BotService() {
+    private BotService() {
         this.messageListeners = new ArrayList<>();
         new DefaultListeners(this);
-
     }
 
     public void registerListener(MessageListener messageListener){

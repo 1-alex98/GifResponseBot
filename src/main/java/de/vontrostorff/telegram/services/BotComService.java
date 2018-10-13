@@ -1,8 +1,11 @@
-package sample.telegram.services;
+package de.vontrostorff.telegram.services;
 
-import com.sun.deploy.Environment;
-import com.sun.xml.internal.bind.marshaller.Messages;
-import lombok.Data;
+import de.vontrostorff.telegram.dtos.TelegramMessageResponse;
+import de.vontrostorff.telegram.dtos.TelegramUpdate;
+import de.vontrostorff.telegram.dtos.TelegramUpdateResponse;
+import de.vontrostorff.telegram.messages.SendAnimation;
+import de.vontrostorff.telegram.messages.SendMessage;
+import de.vontrostorff.telegram.messages.TelegramAnswer;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
@@ -10,18 +13,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
-import sample.telegram.dtos.TelegramMessageResponse;
-import sample.telegram.dtos.TelegramUpdate;
-import sample.telegram.dtos.TelegramUpdateResponse;
-import sample.telegram.messages.SendAnimation;
-import sample.telegram.messages.SendMessage;
-import sample.telegram.messages.TelegramAnswer;
 
-import java.io.UnsupportedEncodingException;
-import java.net.*;
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Log4j
@@ -30,6 +28,7 @@ public class BotComService {
     private ScheduledExecutorService scheduledExecutorService;
     private static final long FETCH_PERIOD= 2500;
     private static final String BOT_KEY=System.getenv("TELEGRAM_BOT_KEY");
+    private final Executor executor = Executors.newSingleThreadExecutor();
     private Long lastUpdateId;
 
     public BotComService() {
@@ -66,7 +65,7 @@ public class BotComService {
                 ArrayList<TelegramUpdate> telegramUpdates = new ArrayList<>(updates.getResult());
                 for (TelegramUpdate telegramUpdate:telegramUpdates){
                         log.debug(MessageFormat.format("Received new message with id: {0}",telegramUpdate.getUpdateId()));
-                        updateProcessor.processUpdate(telegramUpdate);
+                    executor.execute(() -> updateProcessor.processUpdate(telegramUpdate));
                 }
             }else {
                 log.warn("No updates found");
@@ -74,9 +73,11 @@ public class BotComService {
 
         }catch (Exception e){
             log.error("Exception during the fetching of updates",e);
+        } finally {
+            if (!scheduledExecutorService.isShutdown()) {
+                scheduledExecutorService.schedule(() -> getUpdatesAndHandOver(updateProcessor), FETCH_PERIOD, TimeUnit.MILLISECONDS);
+            }
         }
-        if(scheduledExecutorService.isShutdown()) return;
-        scheduledExecutorService.schedule(()->getUpdatesAndHandOver(updateProcessor),FETCH_PERIOD,TimeUnit.MILLISECONDS);
     }
 
     private String getURIwitthParameters(String method, Map<String,String> parameters) {
@@ -136,6 +137,9 @@ public class BotComService {
         HashMap<String, String> parameters = new HashMap<>();
         parameters.put("chat_id", String.valueOf(message.getChatId()));
         parameters.put("text",message.getText());
+        if (message.getContentType() != null) {
+            parameters.put("parse_mode", message.getContentType());
+        }
         TelegramMessageResponse sendMessage;
 
         sendMessage = restTemplate.getForObject(getURIwitthParameters("sendMessage",parameters), TelegramMessageResponse.class);

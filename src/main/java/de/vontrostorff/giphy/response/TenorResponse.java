@@ -1,4 +1,4 @@
-package sample.giphy.response;
+package de.vontrostorff.giphy.response;
 
 import lombok.Data;
 

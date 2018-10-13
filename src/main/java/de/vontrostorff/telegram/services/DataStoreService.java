@@ -1,13 +1,8 @@
-package sample.telegram.services;
+package de.vontrostorff.telegram.services;
 
-import com.google.gson.Gson;
-import lombok.Data;
+import de.vontrostorff.telegram.dtos.TelegramUpdate;
 import lombok.extern.log4j.Log4j;
-import org.springframework.util.FileSystemUtils;
-import sample.telegram.dtos.TelegramUpdate;
 
-import java.io.*;
-import java.nio.file.Files;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;

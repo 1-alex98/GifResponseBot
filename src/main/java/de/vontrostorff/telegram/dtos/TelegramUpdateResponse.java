@@ -1,4 +1,4 @@
-package sample.telegram.dtos;
+package de.vontrostorff.telegram.dtos;
 
 import lombok.Data;
 
