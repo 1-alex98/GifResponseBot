@@ -1,4 +1,4 @@
-package sample.telegram.messages;
+package de.vontrostorff.telegram.messages;
 
 import lombok.Data;
 

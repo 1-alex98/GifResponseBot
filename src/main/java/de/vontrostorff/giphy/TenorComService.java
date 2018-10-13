@@ -1,10 +1,9 @@
-package sample.giphy;
+package de.vontrostorff.giphy;
 
+import de.vontrostorff.giphy.response.TenorGif;
+import de.vontrostorff.giphy.response.TenorResponse;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
-import sample.giphy.response.TenorGif;
-import sample.giphy.response.TenorMedia;
-import sample.giphy.response.TenorResponse;
 
 import java.text.MessageFormat;
 import java.util.Collections;

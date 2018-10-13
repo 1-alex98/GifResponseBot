@@ -1,10 +1,10 @@
-package sample.telegram.reactions;
+package de.vontrostorff.telegram.reactions;
 
-import sample.giphy.TenorComService;
-import sample.telegram.messages.SendAnimation;
-import sample.telegram.messages.SendMessage;
-import sample.telegram.services.BotService;
-import sample.telegram.services.DataStoreService;
+import de.vontrostorff.giphy.TenorComService;
+import de.vontrostorff.telegram.messages.SendAnimation;
+import de.vontrostorff.telegram.messages.SendMessage;
+import de.vontrostorff.telegram.services.BotService;
+import de.vontrostorff.telegram.services.DataStoreService;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -52,6 +52,16 @@ public class DefaultListeners {
                 }else if (s.contains("/clear")) {
                     CustomListenersService.getInstance().clear(chatId);
                 }
+            }
+            return Collections.emptyList();
+        });
+
+        //list all commands
+        instance.registerListener(telegramUpdate -> {
+            String text = telegramUpdate.getMessage().getText();
+            if (text == null) return Collections.emptyList();
+            if (text.contains("/list")) {
+                return CustomListenersService.getInstance().getTriggerList(telegramUpdate);
             }
             return Collections.emptyList();
         });
